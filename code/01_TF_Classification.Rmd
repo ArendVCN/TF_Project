@@ -1,0 +1,103 @@
+---
+title: "TF Classification"
+author: "Arend Vancraeynest"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE,
+                      warning=FALSE, 
+                      message=FALSE,
+                      tidy.opts=list(width.cutoff=60)
+                      )
+```
+
+```{r here}
+library(here)
+```
+
+## Overview
+
+Here, you must describe the goal of the analyses documented in this documented.
+
+## Proteome metadata
+### Ready the data for R manipulation
+```{r}
+library(Biostrings)
+proteomes <- list.files(here("data", "Proteomes"), full.names = TRUE)
+
+seqs <- lapply(proteomes, readAAStringSet)
+
+# A file containing the genome assembly versions and reference papers has been made manually 
+extra_data <- read.table(here("data", "Genome_references.txt"), header = FALSE, sep = "\t")
+```
+
+
+### Generate the dataframe
+```{r}
+# Initiate the dataframe based on the species names contained within the file names 
+# (genus abbreviated in 3 or 4 letters, species epithet in full, divided by a '.')
+df <- data.frame(Species_name=gsub(".*/([a-zA-Z]{3,4}\\.[a-zA-Z]+)_(cv\\.[a-zA-Z0-9-]+)?.*", "\\1 \\2", proteomes))
+df$Species_name <- gsub("\\.", ". ", df$Species_name)
+
+# Add the Genome Assembly version
+df$Genome_assembly_version <- extra_data$V1
+
+# Count the number of proteins and genes for each species and append to an initiated dataframe
+check_isoforms <- function(seqlist = NULL) {
+  combined_list <- lapply(seq_along(seqlist), function(x){
+    all_seqs <- names(seqlist[[x]])
+    proteins <- length(all_seqs)
+    
+    # Substring the unique gene names from the different types of annotation
+    unique_seqs <- gsub(" pacid.*$", "", all_seqs)
+    unique_seqs <- gsub("^.*gene=", "", unique_seqs)
+    unique_seqs <- gsub(" (start.*|Protein)$", "", unique_seqs)
+    unique_seqs <- gsub(r"(\t.*)", "", unique_seqs)
+    
+    # In case you want to keep all scaffolds
+    #unique_seqs <- gsub("(?<=([0-9]{5}))(_|\\.)t?[0-9]+(.p)?$", "", unique_seqs, perl = T)
+
+    # Otherwise
+    unique_seqs <- gsub("(_|\\.)t?[0-9]+(.p)?$", "", unique_seqs)
+    
+    # Only retain unique gene handles
+    unique_seqs <- unique(unique_seqs)
+    genes <- length(unique_seqs)
+    
+    return(c(proteins, genes))
+  }
+  )
+  df$Genes <<- sapply(combined_list, "[[", 2)
+  df$Proteins <<- sapply(combined_list, "[[", 1)
+}
+
+check_isoforms(seqs)
+
+# Add the reference papers
+df$References <- extra_data$V2
+
+```
+
+
+```{r}
+# Tidy up the dataframe to make it more reader-friendly by replacing underscores by spaces in the headers
+names(df) <- gsub("_", " ", names(df))
+
+
+library(stringr)
+print(df, right = F)
+```
+
+
+## Session info
+
+This document was created under the following conditions:
+
+```{r sessioninfo}
+sessionInfo()
+```

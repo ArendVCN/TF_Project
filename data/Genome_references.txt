@@ -1,0 +1,21 @@
+GCA 000411095.1	Haudry et al, 2013
+Alyrata 384 v2.1	Rawat et al, 2015
+Athaliana 447 Araport11	Cheng et al, 2017
+GCA 015832515.1	Kliver et al, 2018
+Bstricta 278 v1.2	Lee et al, 2017
+GCA 020002505.1	Yang et al, 2021
+GCA 020002515.1	Yang et al, 2021
+GCA 000686985.2	Sun et al, 2017
+CGI Ni100 ONT Assembly v2	Perumal et al, 2020
+GCA 016432835.1	Paritosh et al, 2020
+GWHAASO00000000	Cai et al, 2020
+GCA 000309985.3	Zhang et al, 2018
+Brapa FPsc 277 v1.3	Nordberg et al, 2014
+GCA 000633955.1	Kagale et al, 2014
+Cgrandiflora 266 v1.1	Slotte et al, 2013
+Crubella 474 v1.1	Slotte et al, 2013
+Esalsugineum 173 v1.0	Yang et al, 2013
+GCA 000411055.1	Haudry et al, 2013
+Rapsa_Xiang v1.0	Zhang et al, 2015
+Sparvula 574 v2.2	Oh et al, 2014
+GCA 000411075.1	Haudry et al, 2013
