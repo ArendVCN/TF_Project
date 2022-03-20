@@ -54,26 +54,25 @@ check_isoforms <- function(seqlist = NULL) {
     proteins <- length(all_seqs)
     
     # Substring the unique gene names from the different types of annotation
-    unique_seqs <- gsub(" pacid.*$", "", all_seqs)
+    unique_seqs <- gsub(" pacid.*$|  \\[.+", "", all_seqs)
     unique_seqs <- gsub("^.*gene=", "", unique_seqs)
     unique_seqs <- gsub(" (start.*|Protein)$", "", unique_seqs)
     unique_seqs <- gsub(r"(\t.*)", "", unique_seqs)
     
-    # In case you want to keep all scaffolds
-    #unique_seqs <- gsub("(?<=([0-9]{5}))(_|\\.)t?[0-9]+(.p)?$", "", unique_seqs, perl = T)
-
-    # Otherwise
+    # This also reduces all scaffolds annotated as 'scaffoldXXX_XX' to 'scaffoldXXX' (by Haudry et al.)
+    # which results in an extremely high loss of data far below the expected number
     unique_seqs <- gsub("(_|\\.)t?[0-9]+(.p)?$", "", unique_seqs)
+    
     
     # Only retain unique gene handles
     unique_seqs <- unique(unique_seqs)
     genes <- length(unique_seqs)
-    
+
     return(c(proteins, genes))
   }
   )
-  df$Genes <<- sapply(combined_list, "[[", 2)
-  df$Proteins <<- sapply(combined_list, "[[", 1)
+  df$Coding_genes <<- sapply(combined_list, "[[", 2)
+  df$Annotated_proteins <<- sapply(combined_list, "[[", 1)
 }
 
 check_isoforms(seqs)
