@@ -41,7 +41,7 @@ extra_data <- read.table(here("data", "Genome_references.txt"), header = FALSE, 
 ```{r}
 # Initiate the dataframe based on the species names contained within the file names 
 # (genus abbreviated in 3 or 4 letters, species epithet in full, divided by a '.')
-df <- data.frame(Species_name=gsub(".*/([a-zA-Z]{3,4}\\.[a-zA-Z]+)_(cv\\.[a-zA-Z0-9-]+)?.*", "\\1 \\2", proteomes))
+df <- data.frame(Species_name=gsub(".*/([a-z]{3,4}\\.[a-zA-Z]+)_((cv|ssp)\\.[a-z0-9-]+)?.*", "\\1 \\2", proteomes, ignore.case = TRUE))
 df$Species_name <- gsub("\\.", ". ", df$Species_name)
 
 # Add the Genome Assembly version
@@ -54,15 +54,12 @@ check_isoforms <- function(seqlist = NULL) {
     proteins <- length(all_seqs)
     
     # Substring the unique gene names from the different types of annotation
-    unique_seqs <- gsub(" pacid.*$|  \\[.+", "", all_seqs)
-    unique_seqs <- gsub("^.*gene=", "", unique_seqs)
-    unique_seqs <- gsub(" (start.*|Protein)$", "", unique_seqs)
-    unique_seqs <- gsub(r"(\t.*)", "", unique_seqs)
+    unique_seqs <- gsub("^.*gene=", "", all_seqs, ignore.case = TRUE)
+    unique_seqs <- gsub("\\s.*$", "", unique_seqs)
     
     # This also reduces all scaffolds annotated as 'scaffoldXXX_XX' to 'scaffoldXXX' (by Haudry et al.)
     # which results in an extremely high loss of data far below the expected number
     unique_seqs <- gsub("(_|\\.)t?[0-9]+(.p)?$", "", unique_seqs)
-    
     
     # Only retain unique gene handles
     unique_seqs <- unique(unique_seqs)
