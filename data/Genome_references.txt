@@ -11,7 +11,7 @@ GCA 000686985.2	Sun et al, 2017
 CGI Ni100 ONT Assembly v2	Perumal et al, 2020
 GCA 016432835.1	Paritosh et al, 2020
 GCA_900416815.2	Belser et al, 2018
-GWHAASO00000000	Cai et al, 2020
+GWHAASO00000000 v2.0	Cai et al, 2020
 GCA 000309985.3	Zhang et al, 2018
 Brapa FPsc 277 v1.3	Nordberg et al, 2014
 GCA 000633955.1	Kagale et al, 2014
@@ -20,6 +20,8 @@ Crubella 474 v1.1	Slotte et al, 2013
 Chirsuta MPIPZ v1.0	Gan et al, 2016
 Esalsugineum 173 v1.0	Yang et al, 2013
 GCA 000411055.1	Haudry et al, 2013
+GWHANWL00000000 v1.0	Zhang et al, 2021
+GWHANWM00000000 v1.0	Zhang et al, 2021
 Rapsa_Xiang v1.0	Zhang et al, 2015
 Sparvula 574 v2.2	Oh et al, 2014
 GCA 000411075.1	Haudry et al, 2013
