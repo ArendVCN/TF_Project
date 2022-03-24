@@ -37,11 +37,11 @@ extra_data <- read.table(here("data", "Genome_references.txt"), header = FALSE, 
 ```
 
 
-### Generate the dataframe
+### Generate a summary dataframe
 ```{r}
 # Initiate the dataframe based on the species names contained within the file names 
 # (genus abbreviated in 3 or 4 letters, species epithet in full, divided by a '.')
-df <- data.frame(Species_name=gsub(".*/([a-z]{3,4}\\.[a-zA-Z]+)_((cv|ssp)\\.[a-z0-9-]+)?.*", "\\1 \\2", proteomes, ignore.case = TRUE))
+df <- data.frame(Species_name=gsub(".*/([a-z]\\.[a-zA-Z]+)_((cv|ssp)\\.[a-z0-9-]+)?.*", "\\1 \\2", proteomes, ignore.case = TRUE))
 df$Species_name <- gsub("\\.", ". ", df$Species_name)
 
 # Add the Genome Assembly version
@@ -56,10 +56,7 @@ check_isoforms <- function(seqlist = NULL) {
     # Substring the unique gene names from the different types of annotation
     unique_seqs <- gsub("^.*gene=", "", all_seqs, ignore.case = TRUE)
     unique_seqs <- gsub("\\s.*$", "", unique_seqs)
-    
-    # This also reduces all scaffolds annotated as 'scaffoldXXX_XX' to 'scaffoldXXX' (by Haudry et al.)
-    # which results in an extremely high loss of data far below the expected number
-    unique_seqs <- gsub("(_|\\.)t?[0-9]+(.p)?$", "", unique_seqs)
+    unique_seqs <- gsub("\\.t?[0-9]+(.p)?$", "", unique_seqs)
     
     # Only retain unique gene handles
     unique_seqs <- unique(unique_seqs)
@@ -77,16 +74,45 @@ check_isoforms(seqs)
 # Add the reference papers
 df$References <- extra_data$V2
 
+# Tidy up the dataframe to make it more reader-friendly by replacing underscores by spaces in the headers
+names(df) <- gsub("_", " ", names(df))
 ```
 
 
+### Clean up the protein FASTA files
 ```{r}
-# Tidy up the dataframe to make it more reader-friendly by replacing underscores by spaces in the headers
-names(df) <- gsub("_", " ", names(df))
+library(tidyverse)
+
+primary_transcripts <- function(seq_stringset = NULL){
+  n <- names(seq_stringset)
+  
+  # For each transcript, find the encoding gene
+  unique_seqs <- gsub("^.*gene=", "", n, ignore.case = TRUE)
+  unique_seqs <- gsub("\\s.*$", "", unique_seqs)
+  unique_seqs <- gsub("\\.t?[0-9]+(.p)?$", "", unique_seqs)
+  
+  # Make a dataframe with the transcript names, gene names and sequence lengths
+  # group by the gene names and only keep the longest sequence (which should by the primary)
+  df_clean <- data.frame(names = n, clean_names = unique_seqs, len = width(seq_stringset)) %>% 
+    group_by(clean_names) %>% 
+    filter(len == max(len))
+  
+  # In some cases transcripts are duplicated (different id, but same length & sequence) --> keep only the first
+  df_clean <- df_clean[!duplicated(df_clean$clean_names), ]
+  
+  # Return the AAStringset datatype filtered by the remaining names
+  return(seq_stringset[df_clean$names])
+}
 
 
-library(stringr)
-print(df, right = F)
+# If the count of genes and proteins is not equal (aka more transcripts per gene instead of just the primary):
+# apply the primary_transcript function. If equal: just copy the object
+clean_seqlist <- lapply(seq_along(seqs), function(x){
+  if(df[x,]$'Coding genes' != df[x,]$'Annotated proteins'){
+    primary_transcripts(seqs[[x]])
+  } else {seqs[[x]]
+  }
+})
 ```
 
 
