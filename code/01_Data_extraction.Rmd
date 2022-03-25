@@ -40,9 +40,11 @@ extra_data <- read.table(here("data", "Genome_references.txt"), header = FALSE, 
 ### Generate a summary dataframe
 ```{r}
 # Initiate the dataframe based on the species names contained within the file names 
-# (genus abbreviated in 3 or 4 letters, species epithet in full, divided by a '.')
-df <- data.frame(Species_name=gsub(".*/([a-z]\\.[a-zA-Z]+)_((cv|ssp)\\.[a-z0-9-]+)?.*", "\\1 \\2", proteomes, ignore.case = TRUE))
-df$Species_name <- gsub("\\.", ". ", df$Species_name)
+# (genus abbreviated in 1 letter, species epithet in full, divided by a '.')
+species_names <- gsub(".*/([a-z]\\.[a-z]+)_((cv|ssp)\\.[a-z0-9-]+)?.*", "\\1 \\2", proteomes, ignore.case = TRUE)
+species_names <- gsub(" $", "", species_names)
+df <- data.frame(Species_name = species_names)
+
 
 # Add the Genome Assembly version
 df$Genome_assembly_version <- extra_data$V1
@@ -105,14 +107,34 @@ primary_transcripts <- function(seq_stringset = NULL){
 }
 
 
+# Create a new directory for the cleaned files
+clean_directory <- here("data", "Proteomes_clean")
+if(dir.exists(clean_directory)){
+  cat("Directory already exists!")
+} else {
+  dir.create(clean_directory)
+}
+
+
+
 # If the count of genes and proteins is not equal (aka more transcripts per gene instead of just the primary):
 # apply the primary_transcript function. If equal: just copy the object
-clean_seqlist <- lapply(seq_along(seqs), function(x){
+invisible(lapply(seq_along(seqs), function(x){
   if(df[x,]$'Coding genes' != df[x,]$'Annotated proteins'){
-    primary_transcripts(seqs[[x]])
-  } else {seqs[[x]]
-  }
+    stringset <- primary_transcripts(seqs[[x]])
+  } else {stringset <- seqs[[x]]
+  } 
+  # Generate new file names for the clean data
+  new_file_name <- gsub(" ", "_", paste(species_names[x], "PrimaryTranscript.pep"))
+  
+  # Write the stringset data to a fasta file
+  writeXStringSet(stringset, here("data", "Proteomes_clean", new_file_name), format = "fasta")
+  
+  # As a nice side note, displays which file is being compiled
+  return(cat("File", x, "generated!\n"))
 })
+)
+
 ```
 
 
