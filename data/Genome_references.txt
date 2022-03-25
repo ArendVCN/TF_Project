@@ -1,4 +1,4 @@
-GCA_000733195.1 v4	Willing et al, 2015
+GCA 000733195.1 v4	Willing et al, 2015
 Aarabicum v3.1	Nguyen et al, 2019
 Alyrata 384 v2.1	Rawat et al, 2015
 Athaliana 447 Araport11	Cheng et al, 2017
@@ -8,7 +8,7 @@ GCA 020002515.1	Yang et al, 2021
 GCA 000686985.2	Sun et al, 2017
 CGI Ni100 ONT Assembly v2	Perumal et al, 2020
 GCA 016432835.1	Paritosh et al, 2020
-GCA_900416815.2	Belser et al, 2018
+GCA 900416815.2	Belser et al, 2018
 GWHAASO00000000 v2.0	Cai et al, 2020
 GCA 000309985.3	Zhang et al, 2018
 Brapa FPsc 277 v1.3	Nordberg et al, 2014
