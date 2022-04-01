@@ -1,0 +1,244 @@
+---
+title: "Document name"
+author: "Your Name"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE,
+                      warning=FALSE, 
+                      message=FALSE,
+                      tidy.opts=list(width.cutoff=60),
+                      tidy=TRUE)
+```
+
+```{r here}
+library(here)
+```
+
+## Overview
+
+Here, you must describe the goal of the analyses documented in this documented.
+
+## Species tree
+
+```{r, message=FALSE}
+# Load packages
+library(patchwork)
+library(reshape2)
+library(ggplot2)
+library(Biostrings)
+```
+
+
+```{r, fig.width=8, fig.height=8}
+
+# A newick file with our relevant species was downloaded from TimeTree,
+# and updated with the cultivars/subspecies, as well as refined based on the scientific literature
+tree_file <- here("data", "Better_species_tree2.nwk.txt")
+tree <- treeio::read.newick(tree_file)
+
+species_tree <- ggtree::ggtree(tree) +
+  xlim(NA, 35) +
+  ggtree::geom_tiplab(align=T, parse=T)
+
+```
+
+
+## Constructing heatmaps
+### Raw counts
+```{r}
+
+tf_file <- "https://raw.githubusercontent.com/almeidasilvaf/brassicaceae_tfs/main/products/tables/tf_families_per_species.tsv"
+
+# load data and subset
+tf_data <- read.delim(tf_file, header=T)
+rownames(tf_data) <- tf_data$Family
+tf_data$Family <- NULL
+tf_species_matrix <- as.matrix(tf_data)
+
+tf_species_matrix <- tf_species_matrix[,ggtree::get_taxa_name(species_tree)]
+
+# create a heatmaps using ggplot and geom_tile
+melt_df <- melt(t(tf_species_matrix))
+colnames(melt_df) <- c("Species", "TF", "Size")
+
+q96 <- stats::quantile(melt_df$Size, probs = c(0.6, 0.8, 0.9, 0.95, 0.96, 1), na.rm = TRUE)[5]
+melt_df$high <- ifelse(melt_df$Size >= q96, 'yes', 'no')
+melt_df$Species <- factor(melt_df$Species, levels = rev(ggtree::get_taxa_name(species_tree)))
+
+p <- ggplot(melt_df, aes(x = TF, y = Species, fill = Size)) +
+  geom_tile() +
+  scale_fill_gradient(low = "#f3ffce", high = "#00441B", name = "TF count") +
+  theme_minimal() +
+  theme(axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0.9, face = "bold"),
+        axis.title.x = element_blank(),
+        plot.title = ggtext::element_markdown(hjust = 0.5)
+        ) + 
+  labs(title = "TF family sizes in *Brassicaceae*") +
+  geom_text(aes(x = TF, y = Species, label = Size, color = high),
+                     size = 4) +
+  scale_color_manual(
+    values = c('no' = 'grey10', 'yes' = "grey90"), guide = "none",
+  )
+
+```
+
+
+### TF sizes rescaled to respective genome
+```{r, fig.width=15, fig.height=10}
+# Rescale TF numbers based on genome size:
+# Retrieve gene numbers from the files
+proteomes <- list.files(here("products", "result_files", "Proteomes_clean"), full.names = TRUE)
+
+species_names <- gsub(".*/(.*)_PrimaryTranscript.pep$", "\\1", proteomes)
+species_names <- gsub("-", ".", species_names)
+
+seqs <- sapply(proteomes, function(x){length(readAAStringSet(x))})
+
+df <- data.frame(Species = species_names)
+df$Gene_number <- seqs
+rownames(df) <- df$Species
+df2 <- df[colnames(tf_species_matrix),]
+df2$Species <- NULL
+
+matrix_rescaled1 <- sweep(tf_species_matrix*100, 2, df2$Gene_number, FUN = '/')
+matrix_rescaled1 <- round(matrix_rescaled1, 2)
+
+# Construct the heatmap
+df_rescaled1 <- melt(t(matrix_rescaled1))
+colnames(df_rescaled1) <- c("Species", "TF", "Size")
+
+q93 <- stats::quantile(df_rescaled1$Size, probs = c(0.6, 0.8, 0.9, 0.93, 0.95, 1), na.rm = TRUE)[4]
+df_rescaled1$high <- ifelse(df_rescaled1$Size >= q93, 'yes', 'no')
+df_rescaled1$Species <- factor(df_rescaled1$Species, levels = rev(ggtree::get_taxa_name(species_tree)))
+
+p1 <- ggplot(df_rescaled1, aes(x = TF, y = Species, fill = Size)) +
+  geom_tile() +
+  scale_fill_gradient(low = "#f3ffce", high = "#00441B", name = "TF size (%)") +
+  theme_minimal() +
+  theme(axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0.9, face = "bold"),
+        axis.title.x = element_blank(),
+        plot.title = ggtext::element_markdown(hjust = 0.5)
+        ) + 
+  labs(title = "TF family sizes in *Brassicaceae* - Genome rescaled") +
+  geom_text(aes(x = TF, y = Species, label = Size, color = high),
+                     size = 4
+            ) +
+  scale_color_manual(
+    values = c('no' = 'grey10', 'yes' = "grey90"), guide = "none",
+  )
+
+```
+
+
+### TF sizes log rescaled according to V.vinifera sizes
+```{r, fig.width=15, fig.height=10}
+# Rescale to V.vinifera numbers (diploid base genome)
+diploid <- as.data.frame(tf_species_matrix)$V.vinifera_cv.PN40024
+
+matrix_rescaled2 <- sweep(tf_species_matrix, 1, diploid, FUN = '/')
+matrix_rescaled2 <- log10(matrix_rescaled2)
+matrix_rescaled2 <- round(matrix_rescaled2, 1)
+
+
+# Construct the heatmap
+df_rescaled2 <- melt(t(matrix_rescaled2))
+colnames(df_rescaled2) <- c("Species", "TF", "Size")
+
+q96.5 <- stats::quantile(df_rescaled2$Size, probs = c(0.6, 0.8, 0.9, 0.95, 0.965, 1), na.rm = TRUE)[5]
+df_rescaled2$high <- ifelse(df_rescaled2$Size >= q96.5, 'yes', 'no')
+df_rescaled2$Species <- factor(df_rescaled2$Species, levels = rev(ggtree::get_taxa_name(species_tree)))
+
+p2 <- ggplot(df_rescaled2, aes(x = TF, y = Species, fill = Size)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "#bd0e01", mid = "#f3ffce", high = "#00441B", name = "TF size (log)") +
+  theme_minimal() +
+  theme(axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0.9, face = "bold"),
+        axis.title.x = element_blank(),
+        plot.title = ggtext::element_markdown(hjust = 0.5)
+        ) + 
+  labs(title = "TF family sizes in *Brassicaceae* - *Vitis* log rescaled") +
+  geom_text(aes(x = TF, y = Species, label = Size, color = high),
+                     size = 4) +
+  scale_color_manual(
+    values = c('no' = 'grey10', 'yes' = "grey90"), guide = "none",
+  )
+
+```
+
+
+### Combination of genome and V.vinifera rescaling
+```{r, fig.width=15, fig.height=10}
+matrix_rescaled3 <- sweep(tf_species_matrix*100, 2, df2$Gene_number, FUN = '/')
+
+diploid2 <- as.data.frame(matrix_rescaled3)$V.vinifera_cv.PN40024
+
+matrix_rescaled3 <- sweep(matrix_rescaled3, 1, diploid2, FUN = '/')
+matrix_rescaled3 <- log10(matrix_rescaled3)
+matrix_rescaled3 <- round(matrix_rescaled2, 1)
+
+# Construct the heatmap
+df_rescaled3 <- melt(t(matrix_rescaled3))
+colnames(df_rescaled3) <- c("Species", "TF", "Size")
+
+q96.5_r <- stats::quantile(df_rescaled3$Size, probs = c(0.6, 0.8, 0.9, 0.95, 0.965, 1), na.rm = TRUE)[5]
+df_rescaled3$high <- ifelse(df_rescaled3$Size >= q96.5_r, 'yes', 'no')
+df_rescaled3$Species <- factor(df_rescaled3$Species, levels = rev(ggtree::get_taxa_name(species_tree)))
+
+p3 <- ggplot(df_rescaled3, aes(x = TF, y = Species, fill = Size)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "#bd0e01", mid = "#f3ffce", high = "#00441B", name = "TF size (log)") +
+  theme_minimal() +
+  theme(axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0.9, face = "bold"),
+        axis.title.x = element_blank(),
+        plot.title = ggtext::element_markdown(hjust = 0.5)
+        ) + 
+  labs(title = "TF family sizes in *Brassicaceae* - full rescaled") +
+  geom_text(aes(x = TF, y = Species, label = Size, color = high),
+                     size = 4) +
+  scale_color_manual(
+    values = c('no' = 'grey10', 'yes' = "grey90"), guide = "none",
+  )
+
+```
+
+
+```{r}
+# The display of the endpoint labels (aka species names) is improved:
+# removed underscores, font converted into italics through a reach around
+tree$tip.label <- gsub("_", " ", tree$tip.label)
+tree$tip.label <- gsub("\\.([0-9]{1,2})$", "-\\1", tree$tip.label)
+
+# Reach around: names enclosed by paste(italic()) as character strings and later within ggtree function parsed
+tree$tip.label <- gsub("(.+)", "paste(italic('\\1'))", tree$tip.label)
+
+species_tree_nice <- ggtree::ggtree(tree) +
+  xlim(NA, 35) +
+  ggtree::geom_tiplab(align=T, parse=T)
+
+# Wrap the heatmaps together with the dendrogram
+wrapped <- wrap_plots(species_tree_nice, p, widths = c(0.6, 2.4))
+wrapped1 <- wrap_plots(species_tree_nice, p1, widths = c(0.6, 2.4))
+wrapped2 <- wrap_plots(species_tree_nice, p2, widths = c(0.6, 2.4))
+wrapped3 <- wrap_plots(species_tree_nice, p3, widths = c(0.6, 2.4))
+
+```
+
+
+## Session info
+
+This document was created under the following conditions:
+
+```{r sessioninfo}
+sessionInfo()
+```

@@ -108,7 +108,7 @@ primary_transcripts <- function(seq_stringset = NULL){
 
 
 # Create a new directory for the cleaned files
-clean_directory <- here("data", "Proteomes_clean")
+clean_directory <- here("products", "result_files", "Proteomes_clean")
 if(dir.exists(clean_directory)){
   cat("Directory already exists!")
 } else {
@@ -128,10 +128,12 @@ invisible(lapply(seq_along(seqs), function(x){
   new_file_name <- gsub(" ", "_", paste(species_names[x], "PrimaryTranscript.pep"))
   
   # Write the stringset data to a fasta file
-  writeXStringSet(stringset, here("data", "Proteomes_clean", new_file_name), format = "fasta")
+  if(!file.exists(here(clean_directory, new_file_name))){
+    writeXStringSet(stringset, here(clean_directory, new_file_name), format = "fasta")
+  }
   
   # As a nice side note, displays which file is being compiled
-  return(cat("File", x, "generated!\n"))
+  return(message("File", x, "generated!\n"))
 })
 )
 
