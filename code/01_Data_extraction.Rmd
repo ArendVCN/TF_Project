@@ -26,7 +26,7 @@ Here, you must describe the goal of the analyses documented in this documented.
 
 ## Proteome metadata
 ### Ready the data for R manipulation
-```{r}
+```{r, message=FALSE}
 library(Biostrings)
 proteomes <- list.files(here("data", "Proteomes"), full.names = TRUE)
 
@@ -110,11 +110,10 @@ primary_transcripts <- function(seq_stringset = NULL){
 # Create a new directory for the cleaned files
 clean_directory <- here("products", "result_files", "Proteomes_clean")
 if(dir.exists(clean_directory)){
-  cat("Directory already exists!")
+  cat("Directory already exists!\n")
 } else {
   dir.create(clean_directory)
 }
-
 
 
 # If the count of genes and proteins is not equal (aka more transcripts per gene instead of just the primary):
