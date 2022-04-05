@@ -136,15 +136,15 @@ df_vitis_resc$Species <- factor(df_vitis_resc$Species, levels = rev(ggtree::get_
 
 plot_vitis <- ggplot(df_vitis_resc, aes(x = TF, y = Species, fill = Size)) +
   geom_tile() +
-  scale_fill_gradient2(low = "#bd0e01", mid = "#f3ffce", high = "#00441B", name = "TF size (log)") +
+  scale_fill_gradient2(low = "#bd0e01", mid = "#f3ffce", high = "#00441B", name = "TF size\n(log)") +
   theme_minimal() +
   theme(axis.text.y = element_blank(),
         axis.title.y = element_blank(),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0.9, face = "bold"),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, face = "bold"),
         axis.title.x = element_blank(),
         plot.title = ggtext::element_markdown(hjust = 0.5)
         ) + 
-  labs(title = "TF family sizes in *Brassicaceae* - *Vitis* log rescaled") +
+  labs(title = "**TF family sizes in *Brassicaceae* - *Vitis* log rescaled**") +
   geom_text(aes(x = TF, y = Species, label = Size, color = high),
                      size = 4) +
   scale_color_manual(
