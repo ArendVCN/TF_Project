@@ -43,16 +43,24 @@ species_tree <- ggtree::ggtree(tree)
 ### Generate a matrix based on the TF family counts
 ```{r}
 
-tf_file <- "https://raw.githubusercontent.com/almeidasilvaf/brassicaceae_tfs/main/products/tables/tf_families_per_species.tsv"
+# tf_file <- "https://raw.githubusercontent.com/almeidasilvaf/brassicaceae_tfs/main/products/tables/tf_families_per_species.tsv"
 
 # load data and subset
-tf_data <- read.delim(tf_file, header=T)
-rownames(tf_data) <- tf_data$Family
-tf_data$Family <- NULL
-tf_species_matrix <- as.matrix(tf_data)
+# tf_data <- read.delim(tf_file, header=T)
+# rownames(tf_data) <- tf_data$Family
+# tf_data$Family <- NULL
+# tf_species_matrix <- as.matrix(tf_data)
 
+# tf_species_matrix <- tf_species_matrix[,ggtree::get_taxa_name(species_tree)]
+```
+
+```{r}
+tf_file <- read.table(here("products", "tables", "TF_CountTable.txt"), header = T)
+tf_species_matrix <- as.matrix(tf_file)
 tf_species_matrix <- tf_species_matrix[,ggtree::get_taxa_name(species_tree)]
 ```
+
+
 
 ### Raw counts:
 ```{r}
@@ -60,8 +68,8 @@ tf_species_matrix <- tf_species_matrix[,ggtree::get_taxa_name(species_tree)]
 df_raw <- melt(t(tf_species_matrix))
 colnames(df_raw) <- c("Species", "TF", "Size")
 
-q96 <- stats::quantile(df_raw$Size, probs = c(0.6, 0.8, 0.9, 0.95, 0.96, 1), na.rm = TRUE)[5]
-df_raw$high <- ifelse(df_raw$Size >= q96, 'yes', 'no')
+q98.45 <- stats::quantile(df_raw$Size, probs = c(0.6, 0.8, 0.9, 0.95, 0.9845, 1), na.rm = TRUE)[5]
+df_raw$high <- ifelse(df_raw$Size >= q98.45, 'yes', 'no')
 df_raw$Species <- factor(df_raw$Species, levels = rev(ggtree::get_taxa_name(species_tree)))
 
 plot_raw <- ggplot(df_raw, aes(x = TF, y = Species, fill = Size)) +
@@ -87,14 +95,14 @@ plot_raw <- ggplot(df_raw, aes(x = TF, y = Species, fill = Size)) +
 ### TF sizes log2 rescaled
 ```{r}
 # Generate a new matrix with log2-rescaled values
-log2mat <- round(log2(tf_species_matrix), 2)
+log2mat <- round(log2(tf_species_matrix + 1), 1)
 
 # Construct the heatmap
 df_log2rescaled <- melt(t(log2mat))
 colnames(df_log2rescaled) <- c("Species", "TF", "Size")
 
-q75 <- stats::quantile(df_log2rescaled$Size, na.rm = TRUE)[4]
-df_log2rescaled$high <- ifelse(df_log2rescaled$Size >= q75, 'yes', 'no')
+q84 <- stats::quantile(df_log2rescaled$Size, probs = c(0, 0.25, 0.5, 0.75, 0.84, 1), na.rm = TRUE)[5]
+df_log2rescaled$high <- ifelse(df_log2rescaled$Size >= q84, 'yes', 'no')
 df_log2rescaled$Species <- factor(df_log2rescaled$Species, levels = rev(ggtree::get_taxa_name(species_tree)))
 
 plot_log2 <- ggplot(df_log2rescaled, aes(x = TF, y = Species, fill = Size)) +
@@ -122,7 +130,7 @@ plot_log2 <- ggplot(df_log2rescaled, aes(x = TF, y = Species, fill = Size)) +
 diploid <- as.data.frame(tf_species_matrix)$V.vinifera_cv.PN40024
 
 vitis_resc_mat <- sweep(tf_species_matrix, 1, diploid, FUN = '/')
-vitis_resc_mat <- log10(vitis_resc_mat)
+vitis_resc_mat <- log2(vitis_resc_mat + 1)
 vitis_resc_mat <- round(vitis_resc_mat, 1)
 
 
@@ -130,13 +138,13 @@ vitis_resc_mat <- round(vitis_resc_mat, 1)
 df_vitis_resc <- melt(t(vitis_resc_mat))
 colnames(df_vitis_resc) <- c("Species", "TF", "Size")
 
-q96.5 <- stats::quantile(df_vitis_resc$Size, probs = c(0.6, 0.8, 0.9, 0.95, 0.965, 1), na.rm = TRUE)[5]
-df_vitis_resc$high <- ifelse(df_vitis_resc$Size >= q96.5, 'yes', 'no')
+q97.4 <- stats::quantile(df_vitis_resc$Size, probs = c(0.6, 0.8, 0.9, 0.95, 0.974, 1), na.rm = TRUE)[5]
+df_vitis_resc$high <- ifelse(df_vitis_resc$Size >= q97.4, 'yes', 'no')
 df_vitis_resc$Species <- factor(df_vitis_resc$Species, levels = rev(ggtree::get_taxa_name(species_tree)))
 
 plot_vitis <- ggplot(df_vitis_resc, aes(x = TF, y = Species, fill = Size)) +
   geom_tile() +
-  scale_fill_gradient2(low = "#bd0e01", mid = "#f3ffce", high = "#00441B", name = "TF size\n(log)") +
+  scale_fill_gradient(low = "#f3ffce", high = "#00441B", name = "TF size\n(log2)") +
   theme_minimal() +
   theme(axis.text.y = element_blank(),
         axis.title.y = element_blank(),
@@ -144,7 +152,7 @@ plot_vitis <- ggplot(df_vitis_resc, aes(x = TF, y = Species, fill = Size)) +
         axis.title.x = element_blank(),
         plot.title = ggtext::element_markdown(hjust = 0.5)
         ) + 
-  labs(title = "**TF family sizes in *Brassicaceae* - *Vitis* log rescaled**") +
+  labs(title = "**TF family sizes in *Brassicaceae* - *Vitis* adjusted**") +
   geom_text(aes(x = TF, y = Species, label = Size, color = high),
                      size = 4) +
   scale_color_manual(
@@ -162,14 +170,14 @@ log2_vitis_mat <- log2(tf_species_matrix + 1)
 # 2) Compare to Vitis' values
 vitis <- as.data.frame(log2_vitis_mat)$V.vinifera_cv.PN40024
 log2_vitis_mat <- sweep(log2_vitis_mat, 1, vitis, FUN = '/')
-log2_vitis_mat <- round(log2_vitis_mat, 2)
+log2_vitis_mat <- round(log2_vitis_mat, 1)
 
 # Construct the heatmap
 df_log2vitis_resc <- melt(t(log2_vitis_mat))
 colnames(df_log2vitis_resc) <- c("Species", "TF", "Size")
 
-q96.4 <- stats::quantile(df_log2vitis_resc$Size, probs = c(0, 0.25, 0.5, 0.75, 0.9, 0.964, 1), na.rm = TRUE)[6]
-df_log2vitis_resc$high <- ifelse(df_log2vitis_resc$Size >= q96.4, 'yes', 'no')
+q97.65 <- stats::quantile(df_log2vitis_resc$Size, probs = c(0, 0.25, 0.5, 0.75, 0.9765, 1), na.rm = TRUE)[5]
+df_log2vitis_resc$high <- ifelse(df_log2vitis_resc$Size >= q97.65, 'yes', 'no')
 df_log2vitis_resc$Species <- factor(df_log2vitis_resc$Species, levels = rev(ggtree::get_taxa_name(species_tree)))
 
 plot_final <- ggplot(df_log2vitis_resc, aes(x = TF, y = Species, fill = Size)) +
@@ -206,8 +214,8 @@ species_tree_nice <- ggtree::ggtree(tree) +
 
 # Wrap the heatmaps together with the dendrogram
 wrapped <- wrap_plots(species_tree_nice, plot_raw, widths = c(0.6, 2.4))
-wrapped1 <- wrap_plots(species_tree_nice, plot_vitis, widths = c(0.6, 2.4))
-wrapped2 <- wrap_plots(species_tree_nice, plot_log2, widths = c(0.6, 2.4))
+wrapped1 <- wrap_plots(species_tree_nice, plot_log2, widths = c(0.6, 2.4))
+wrapped2 <- wrap_plots(species_tree_nice, plot_vitis, widths = c(0.6, 2.4))
 wrapped3 <- wrap_plots(species_tree_nice, plot_final, widths = c(0.6, 2.4))
 
 ```
