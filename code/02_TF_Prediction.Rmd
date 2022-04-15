@@ -1,0 +1,87 @@
+---
+title: "Document name"
+author: "Your Name"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE,
+                      warning=FALSE, 
+                      message=FALSE,
+                      tidy.opts=list(width.cutoff=60),
+                      tidy=TRUE)
+```
+
+```{r here}
+library(here)
+library(dplyr)
+```
+
+## Overview
+
+Here, you must describe the goal of the analyses documented in this documented.
+
+## Analysis 1
+
+
+```{r}
+# Make a new directory to store the TF_prediction files
+new_dir <- here("products", "result_files", "TF_Predictions")
+
+if(!dir.exists(new_dir)){
+  dir.create(new_dir)
+  setwd(new_dir)
+
+  # Get the names from the clean proteome files (which contain the species' name)
+  # Create with this a new file for each proteome
+  clean_files <- list.files(here("products", "result_files", "Proteomes_clean"))
+  new_names <- gsub("PrimaryTranscript\\.pep", "TF.txt", clean_files)
+  sapply(new_names, file.create)
+}
+
+```
+
+The empty files will have to be manually filled with the prediction data from **PlantTFDB**
+that has been acquired by submitting the files from the Proteomes_clean directory.
+
+```{r}
+TF_df <- data.frame(Family = c("AP2", "ARF", "ARR-B", "B3", "BBR-BPC", "BES1", "bHLH", "bZIP", "C2H2", "C3H",
+                               "CAMTA", "CO-like", "CPP", "DBB", "Dof", "E2F/DP", "EIL", "ERF", "FAR1", "G2-like",
+                               "GATA", "GeBP", "GRAS", "GRF", "HB-other", "HB-PHD", "HD-ZIP", "HRT-like", "HSF", "LBD",
+                               "LFY", "LSD", "M-type_MADS", "MIKC_MADS", "MYB", "MYB_related", "NAC", "NF-X1", "NF-YA", "NF-YB", 
+                               "NF-YC", "Nin-like", "NZZ/SPL", "RAV", "S1Fa-like", "SAP", "SBP", "SRS", "STAT", "TALE", 
+                               "TCP", "Trihelix", "VOZ", "Whirly", "WOX", "WRKY", "YABBY", "ZF-HD"))
+
+TF_files <- list.files(new_dir)
+
+addTF_Counts <- function(tf_file){
+  Species_TFs <- as.data.frame(table(read.delim(paste(new_dir, tf_file, sep = "/"), header = F)$V2))
+  rownames(Species_TFs) <- Species_TFs$Var1
+  colnames(Species_TFs) <- c("Family", gsub("_TF\\.txt$", "", tf_file))
+  return(Species_TFs)
+}
+
+
+AllSpecies_TFs <- lapply(TF_files, addTF_Counts)
+
+for(l in AllSpecies_TFs){
+  TF_df <- merge(TF_df, l, by="Family", all = TRUE)
+}
+
+TF_df$Family <- gsub("_MADS", "", TF_df$Family)
+TF_df$Family <- gsub("_", "-", TF_df$Family)
+rownames(TF_df) <- TF_df$Family
+TF_df$Family <- NULL
+
+write.table(TF_df, file = here("products", "tables", "TF_CountTable.txt"))
+```
+
+
+## Session info
+
+This document was created under the following conditions:
+
+```{r sessioninfo}
+sessionInfo()
+```
