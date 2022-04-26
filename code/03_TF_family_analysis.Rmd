@@ -176,8 +176,8 @@ log2_vitis_mat <- round(log2_vitis_mat, 1)
 df_log2vitis_resc <- melt(t(log2_vitis_mat))
 colnames(df_log2vitis_resc) <- c("Species", "TF", "Size")
 
-q97.65 <- stats::quantile(df_log2vitis_resc$Size, probs = c(0, 0.25, 0.5, 0.75, 0.9765, 1), na.rm = TRUE)[5]
-df_log2vitis_resc$high <- ifelse(df_log2vitis_resc$Size >= q97.65, 'yes', 'no')
+q99.6 <- stats::quantile(df_log2vitis_resc$Size, probs = c(0, 0.25, 0.5, 0.75, 0.996, 1), na.rm = TRUE)[5]
+df_log2vitis_resc$high <- ifelse(df_log2vitis_resc$Size >= q99.6, 'yes', 'no')
 df_log2vitis_resc$Species <- factor(df_log2vitis_resc$Species, levels = rev(ggtree::get_taxa_name(species_tree)))
 
 plot_final <- ggplot(df_log2vitis_resc, aes(x = TF, y = Species, fill = Size)) +
@@ -218,6 +218,27 @@ wrapped1 <- wrap_plots(species_tree_nice, plot_log2, widths = c(0.6, 2.4))
 wrapped2 <- wrap_plots(species_tree_nice, plot_vitis, widths = c(0.6, 2.4))
 wrapped3 <- wrap_plots(species_tree_nice, plot_final, widths = c(0.6, 2.4))
 
+
+# Save the plots as PNGs
+png(here("products", "plots", "Heatmap_RawCounts_Manual.png"),
+    width = 2200, height = 1000)
+wrapped
+dev.off()
+
+png(here("products", "plots", "Heatmap_log2Rescaled_Manual.png"),
+    width = 2200, height = 1000)
+wrapped1
+dev.off()
+
+png(here("products", "plots", "Heatmap_VitisRescaled_Manual.png"),
+    width = 2200, height = 1000)
+wrapped2
+dev.off()
+
+png(here("products", "plots", "Heatmap_FullyRescaled_Manual.png"),
+    width = 2200, height = 1000)
+wrapped3
+dev.off()
 ```
 
 

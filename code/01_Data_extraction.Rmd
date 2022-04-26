@@ -39,6 +39,9 @@ extra_data <- read.table(here("data", "Genome_references.txt"), header = FALSE, 
 
 ### Generate a summary dataframe
 ```{r}
+library(grid)
+library(gridExtra)
+
 # Initiate the dataframe based on the species names contained within the file names 
 # (genus abbreviated in 1 letter, species epithet in full, divided by a '.')
 species_names <- gsub(".*/([a-z]\\.[a-z]+)_((cv|ssp)\\.[a-z0-9-]+)?.*", "\\1 \\2", proteomes, ignore.case = TRUE)
@@ -78,6 +81,18 @@ df$References <- extra_data$V2
 
 # Tidy up the dataframe to make it more reader-friendly by replacing underscores by spaces in the headers
 names(df) <- gsub("_", " ", names(df))
+
+# Make a nice PNG of the data frame
+png(here("products", "tables", "Summary_table.png"),
+    width = 700, height = 590)
+tt <- ttheme_default(core = list(fg_params = list(hjust = 1, x = 0.95, 
+                                                  fontface = matrix(c(3,1,1,1,1), ncol = ncol(df), nrow = nrow(df), byrow = T)
+                                                  ), 
+                                 bg_params = list(fill = "grey99")
+                                 )
+                     )
+grid.table(df, theme = tt, rows = NULL)
+dev.off()
 ```
 
 
@@ -132,7 +147,7 @@ invisible(lapply(seq_along(seqs), function(x){
   }
   
   # As a nice side note, displays which file is being compiled
-  return(message("File", x, "generated!\n"))
+  return(message("File ", x, "generated!\n"))
 })
 )
 
