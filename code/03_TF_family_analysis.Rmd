@@ -187,7 +187,6 @@ plot_final <- ggplot(df_log2vitis_resc, aes(x = TF, y = Species, fill = Size)) +
 ```{r}
 # The display of the endpoint labels (aka species names) is improved: removed underscores, font converted into italics through a reach around
 tree$tip.label <- gsub("_", " ", tree$tip.label)
-tree$tip.label <- gsub("\\.([0-9]{1,2})$", "-\\1", tree$tip.label)
 
 # Reach around: names enclosed by paste(italic()) as character strings and parsed within ggtree function
 tree$tip.label <- gsub("(.+)", "paste(italic('\\1'))", tree$tip.label)
