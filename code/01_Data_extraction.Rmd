@@ -22,7 +22,11 @@ library(here)
 
 ## Overview
 
-Here, you must describe the goal of the analyses documented in this documented.
+This scripts aims to extract the primary (= longest) protein sequences from downloaded protein annotated genome assemblies and writes those to new files (pep extension). In order to do this, files are filtered based on the sequence IDs and for files with differing lengths before and after filtering, only the longest sequence for each ID is retained. Files with an equal length pre- and post-filtering already consist of solely primary transcripts.
+
+The new files are added to a new directory called **'Proteomes_clean'** and will be used in further analyses.
+
+Additionally, a dataframe is generated which depicts for each genome the species name, assembly version, number of genes/primary transcripts, number of proteins/all transcripts and the reference study which assembled the genome.
 
 ## Proteome metadata
 ### Ready the data for R manipulation
@@ -32,7 +36,7 @@ proteomes <- list.files(here("data", "Proteomes"), full.names = TRUE)
 
 seqs <- lapply(proteomes, readAAStringSet)
 
-# A file containing the genome assembly versions and reference papers has been made manually 
+# A file containing the genome assembly versions and reference papers has been made manually in the same order as the proteome files
 extra_data <- read.table(here("data", "Genome_references.txt"), header = FALSE, sep = "\t")
 ```
 
@@ -44,6 +48,7 @@ library(gridExtra)
 
 # Initiate the dataframe based on the species names contained within the file names 
 # (genus abbreviated in 1 letter, species epithet in full, divided by a '.')
+# Subspecies and cultivar specifications are also included
 species_names <- gsub(".*/([a-z]\\.[a-z]+)_((cv|ssp)\\.[a-z0-9-]+)?.*", "\\1 \\2", proteomes, ignore.case = TRUE)
 species_names <- gsub(" $", "", species_names)
 df <- data.frame(Species_name = species_names)
@@ -96,7 +101,7 @@ dev.off()
 ```
 
 
-### Clean up the protein FASTA files
+### Clean up the protein annotation files
 ```{r}
 library(tidyverse)
 
@@ -114,7 +119,7 @@ primary_transcripts <- function(seq_stringset = NULL){
     group_by(clean_names) %>% 
     filter(len == max(len))
   
-  # In some cases transcripts are duplicated (different id, but same length & sequence) --> keep only the first
+  # In some cases transcripts appear duplicated (different id, but same length & sequence) --> keep only the first for simplicity
   df_clean <- df_clean[!duplicated(df_clean$clean_names), ]
   
   # Return the AAStringset datatype filtered by the remaining names
@@ -131,7 +136,7 @@ if(dir.exists(clean_directory)){
 }
 
 
-# If the count of genes and proteins is not equal (aka more transcripts per gene instead of just the primary):
+# If the count of genes and proteins is not equal (aka more transcripts per gene instead of just the primary one):
 # apply the primary_transcript function. If equal: just copy the object
 invisible(lapply(seq_along(seqs), function(x){
   if(df[x,]$'Coding genes' != df[x,]$'Annotated proteins'){

@@ -1,6 +1,6 @@
 ---
-title: "Document name"
-author: "Your Name"
+title: "TF Family Predictions"
+author: "Arend Vancraeynest"
 date: "`r Sys.Date()`"
 output: pdf_document
 ---
@@ -20,11 +20,11 @@ library(dplyr)
 
 ## Overview
 
-Here, you must describe the goal of the analyses documented in this documented.
+After the primary transcript files have been parsed into the **PlantTFDB** TF prediction server, a table can be copied with each transcript that has been predicted as a TF and to which TF family they have been allocated. In this script, empty .txt files are generated to which these tables can be pasted. Next, the data from these files is used to create a giant table that includes for each genome/species the counts for each TF family.
 
-## Analysis 1
+## Prepare data files
 
-
+Creates a new directory with an empty file for each genome.
 ```{r}
 # Make a new directory to store the TF_prediction files
 new_dir <- here("products", "result_files", "TF_Predictions")
@@ -42,10 +42,12 @@ if(!dir.exists(new_dir)){
 
 ```
 
-The empty files will have to be manually filled with the prediction data from **PlantTFDB**
-that has been acquired by submitting the files from the Proteomes_clean directory.
+The empty files will have to be manually filled with the prediction data from PlantTFDB that has been acquired by submitting the files from the Proteomes_clean directory.
+
+## Create a table of TF counts
 
 ```{r}
+# A dataframe is initialized with all TF families
 TF_df <- data.frame(Family = c("AP2", "ARF", "ARR-B", "B3", "BBR-BPC", "BES1", "bHLH", "bZIP", "C2H2", "C3H",
                                "CAMTA", "CO-like", "CPP", "DBB", "Dof", "E2F/DP", "EIL", "ERF", "FAR1", "G2-like",
                                "GATA", "GeBP", "GRAS", "GRF", "HB-other", "HB-PHD", "HD-ZIP", "HRT-like", "HSF", "LBD",
@@ -53,8 +55,10 @@ TF_df <- data.frame(Family = c("AP2", "ARF", "ARR-B", "B3", "BBR-BPC", "BES1", "
                                "NF-YC", "Nin-like", "NZZ/SPL", "RAV", "S1Fa-like", "SAP", "SBP", "SRS", "STAT", "TALE", 
                                "TCP", "Trihelix", "VOZ", "Whirly", "WOX", "WRKY", "YABBY", "ZF-HD"))
 
+# The TF_Prediction files are loaded in as a list
 TF_files <- list.files(new_dir)
 
+# A function is written that reads a .txt file as a table, summarizes the counts for each TF family (through table() function) and generates a dataframe from it that can be merged to the previous dataframe
 addTF_Counts <- function(tf_file){
   Species_TFs <- as.data.frame(table(read.delim(paste(new_dir, tf_file, sep = "/"), header = F)$V2))
   rownames(Species_TFs) <- Species_TFs$Var1
@@ -62,18 +66,19 @@ addTF_Counts <- function(tf_file){
   return(Species_TFs)
 }
 
-
+# Creates a list of dataframes per TF_prediction file (i.e. per genome) and merges each dataframe in this list to the first one (TF_df)
 AllSpecies_TFs <- lapply(TF_files, addTF_Counts)
-
 for(l in AllSpecies_TFs){
   TF_df <- merge(TF_df, l, by="Family", all = TRUE)
 }
 
+# Adjust the names of the TF family slightly so it looks nicer, set these as the rownames and remove the original column
 TF_df$Family <- gsub("_MADS", "", TF_df$Family)
 TF_df$Family <- gsub("_", "-", TF_df$Family)
 rownames(TF_df) <- TF_df$Family
 TF_df$Family <- NULL
 
+# Write the resulting dataframe to a new file as a table
 write.table(TF_df, file = here("products", "tables", "TF_CountTable.txt"))
 ```
 
